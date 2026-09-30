@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family &amp; Home — Practice Game</title>
+<style>
+  :root{
+    --teal:#0d6e6e; --teal-deep:#094f4f; --gold:#d8a24a; --clay:#c46a4a;
+    --paper:#faf7f2; --ink:#1f2a2e; --muted:#5f6b6b; --line:#e6ded2;
+    --green:#2c6e49; --purple:#6d4c7d; --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:Georgia,"Times New Roman",serif; color:var(--ink);
+    background:
+      radial-gradient(circle at 13% 8%, #fdf3e4 0%, transparent 42%),
+      radial-gradient(circle at 87% 92%, #e7f1ef 0%, transparent 45%),
+      var(--paper);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding:0 16px 40px; overflow-x:hidden;
+  }
+  .wrap{width:100%; max-width:660px; position:relative; z-index:1;}
+  canvas#confetti{position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:50;}
+
+  header{text-align:center; padding:26px 0 14px; position:relative;}
+  .eyebrow{font-family:"Trebuchet MS",sans-serif; font-size:.72rem; letter-spacing:.2em; text-transform:uppercase; color:var(--clay); font-weight:bold; margin-bottom:8px;}
+  h1{font-size:1.75rem; font-weight:normal; color:var(--teal-deep); line-height:1.2;}
+  header p{font-family:"Trebuchet MS",sans-serif; font-size:.88rem; color:var(--muted); margin-top:8px;}
+  .sound-btn{position:absolute; top:6px; right:0; background:var(--card); border:1px solid var(--line); width:38px; height:38px; border-radius:50%; cursor:pointer; font-size:1.05rem; display:flex; align-items:center; justify-content:center; z-index:3;}
+
+  .screen{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:26px 20px; box-shadow:0 6px 24px rgba(9,79,79,.07); text-align:center;}
+  .screen h2{font-weight:normal; color:var(--teal-deep); font-size:1.45rem; margin-bottom:10px;}
+  .screen p{font-family:"Trebuchet MS",sans-serif; font-size:.93rem; color:var(--muted); line-height:1.6; margin-bottom:14px;}
+
+  .modes{display:grid; gap:10px; margin-top:6px;}
+  .modebtn{font-family:"Trebuchet MS",sans-serif; text-align:left; background:var(--paper); border:1.5px solid var(--line); border-radius:12px; padding:14px 16px; cursor:pointer; transition:border-color .15s, transform .1s;}
+  .modebtn:active{transform:scale(.98);} .modebtn:hover{border-color:var(--teal);}
+  .modebtn b{display:block; color:var(--teal-deep); font-size:1.02rem; margin-bottom:3px;}
+  .modebtn span{font-size:.82rem; color:var(--muted);}
+
+  .status{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;}
+  .pill{font-family:"Trebuchet MS",sans-serif; font-size:.8rem; color:var(--muted); background:var(--card); border:1px solid var(--line); padding:6px 12px; border-radius:20px; white-space:nowrap;}
+  .timer{display:flex; align-items:center; gap:7px; font-family:"Trebuchet MS",sans-serif; font-weight:bold; font-size:1.02rem; color:var(--teal-deep); background:var(--card); border:1px solid var(--line); padding:6px 14px; border-radius:20px; transition:.3s;}
+  .timer .dot{width:9px;height:9px;border-radius:50%;background:var(--green);transition:.3s;}
+  .timer.warn{color:var(--clay);border-color:var(--clay);} .timer.warn .dot{background:var(--clay);animation:pulse .6s infinite;}
+  @keyframes pulse{50%{opacity:.3;}}
+  .bar{height:8px; background:var(--line); border-radius:5px; overflow:hidden; margin-bottom:18px;}
+  .bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--gold));transition:width .4s ease;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px 20px; box-shadow:0 6px 24px rgba(9,79,79,.07);}
+  .typetag{font-family:"Trebuchet MS",sans-serif; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; font-weight:bold; text-align:center; margin-bottom:12px;}
+  .tag-jumble{color:var(--teal);} .tag-gap{color:var(--purple);}
+  .prompt{font-family:"Trebuchet MS",sans-serif; font-size:.79rem; color:var(--clay); text-align:center; letter-spacing:.03em; margin-bottom:14px; min-height:1.1em;}
+
+  /* jumbled */
+  .answer{min-height:64px; border:2px dashed var(--line); border-radius:12px; padding:10px; display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start; transition:.25s;}
+  .answer.correct{border-color:var(--green);border-style:solid;background:#f0f7f2;}
+  .answer.wrong{border-color:var(--clay);border-style:solid;background:#fbeee9;animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-5px);}80%{transform:translateX(5px);}}
+  .answer:empty::before{content:"Tap the words below in order…";font-family:"Trebuchet MS",sans-serif;font-size:.85rem;color:#b6ab9a;align-self:center;margin:auto;}
+  .bank{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px;min-height:44px;}
+  .chip{font-family:"Trebuchet MS",sans-serif;font-size:1.02rem;background:var(--paper);border:1.5px solid var(--teal);color:var(--teal-deep);padding:9px 15px;border-radius:9px;cursor:pointer;user-select:none;transition:transform .12s,opacity .18s;min-height:44px;display:inline-flex;align-items:center;animation:pop .25s ease backwards;}
+  @keyframes pop{from{transform:scale(.6);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .chip:active{transform:scale(.92);}
+  .chip.placed{background:var(--teal);color:#fff;}
+  .chip.hidden{opacity:0;pointer-events:none;position:absolute;}
+  .chip.locked{pointer-events:none;}
+
+  /* gap fill */
+  .sentence{font-size:1.32rem; line-height:2.1; text-align:center; color:var(--ink); margin-bottom:6px;}
+  .gap{display:inline-block; min-width:110px; border-bottom:2.5px solid var(--purple); color:var(--purple); font-weight:bold; font-family:"Trebuchet MS",sans-serif; font-size:1.05rem; padding:0 6px 2px; text-align:center;}
+  .gap.filled{border-bottom-color:var(--teal); color:var(--teal-deep);}
+  .gap.ok{border-bottom-color:var(--green); color:var(--green);}
+  .gap.no{border-bottom-color:var(--clay); color:var(--clay); text-decoration:line-through;}
+  .opts{display:flex; flex-wrap:wrap; gap:9px; justify-content:center; margin-top:18px;}
+  .opt{font-family:"Trebuchet MS",sans-serif; font-size:1.02rem; background:var(--paper); border:1.5px solid var(--purple); color:var(--purple); padding:10px 17px; border-radius:9px; cursor:pointer; min-height:46px; display:inline-flex; align-items:center; transition:transform .12s;}
+  .opt:active{transform:scale(.93);}
+  .opt.locked{pointer-events:none; opacity:.55;}
+  .opt.chosen{background:var(--purple); color:#fff;}
+
+  .feedback{text-align:center;font-family:"Trebuchet MS",sans-serif;font-size:1rem;min-height:1.6em;margin:16px 0 2px;font-weight:bold;}
+  .feedback.ok{color:var(--green);} .feedback.no{color:var(--clay);}
+  .feedback .pts{color:var(--gold);}
+  .why{text-align:center;font-family:"Trebuchet MS",sans-serif;font-size:.85rem;color:var(--muted);font-style:italic;min-height:1.2em;}
+
+  .controls{display:flex;gap:10px;margin-top:16px;}
+  button.act{flex:1;font-family:"Trebuchet MS",sans-serif;font-size:.96rem;font-weight:bold;padding:14px;border-radius:11px;border:none;cursor:pointer;min-height:48px;transition:transform .1s;}
+  button.act:active{transform:scale(.97);}
+  .btn-check{background:var(--teal);color:#fff;box-shadow:0 4px 0 #073c3c;}
+  .btn-check:disabled{background:#c8d3d0;box-shadow:none;cursor:default;}
+  .btn-clear{background:transparent;color:var(--muted);border:1.5px solid var(--line)!important;}
+  .btn-next{background:var(--gold);color:#3a2a10;box-shadow:0 4px 0 #a9791f;}
+  .btn-ghost{background:transparent;color:var(--teal-deep);border:1.5px solid var(--teal)!important;}
+  .hide{display:none!important;}
+
+  .score-num{font-size:3.4rem;color:var(--teal-deep);line-height:1;}
+  .score-lbl{font-family:"Trebuchet MS",sans-serif;color:var(--muted);font-size:.88rem;margin:6px 0 14px;}
+  .stars{font-size:1.7rem;letter-spacing:6px;margin:4px 0 14px;}
+  .quote{font-style:italic;color:var(--gold);margin-top:20px;font-size:1.03rem;}
+  .credit{font-family:"Trebuchet MS",sans-serif;font-size:.72rem;color:#b6ab9a;text-align:center;margin-top:20px;}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;}}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="wrap">
+  <header>
+    <button class="sound-btn" id="soundBtn">🔊</button>
+    <div class="eyebrow">Free English Program · Week 2</div>
+    <h1>Family &amp; Home Practice</h1>
+    <p>have got · has got · possessives</p>
+  </header>
+
+  <div id="startScreen">
+    <div class="screen">
+      <h2>Choose your practice 🎮</h2>
+      <p>Each round has 12 questions. You get <b>30 seconds</b> each — faster answers score more stars.</p>
+      <div class="modes">
+        <button class="modebtn" data-mode="mixed"><b>🎲 Mixed practice</b><span>Both types — recommended</span></button>
+        <button class="modebtn" data-mode="jumble"><b>🔤 Jumbled sentences</b><span>Put the words in the right order</span></button>
+        <button class="modebtn" data-mode="gap"><b>✏️ Fill in the blanks</b><span>Choose the missing word</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameScreen" class="hide">
+    <div class="status">
+      <span class="pill" id="counter">1 / 12</span>
+      <div class="timer" id="timer"><span class="dot"></span><span id="timeval">30</span>s</div>
+      <span class="pill" id="scoretag">⭐ 0</span>
+    </div>
+    <div class="bar"><span id="barfill"></span></div>
+
+    <div class="card">
+      <div class="typetag" id="typetag"></div>
+      <div class="prompt" id="prompt"></div>
+
+      <div id="jumbleBlock">
+        <div class="answer" id="answer" aria-live="polite"></div>
+        <div class="bank" id="bank"></div>
+      </div>
+
+      <div id="gapBlock" class="hide">
+        <div class="sentence" id="sentence"></div>
+        <div class="opts" id="opts"></div>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+      <div class="why" id="why"></div>
+
+      <div class="controls" id="controls">
+        <button class="act btn-clear" id="clearBtn">Clear</button>
+        <button class="act btn-check" id="checkBtn" disabled>Check</button>
+      </div>
+      <div class="controls hide" id="nextControls">
+        <button class="act btn-ghost" id="tryBtn">Try again</button>
+        <button class="act btn-next" id="nextBtn">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="doneScreen" class="hide"></div>
+  <div class="credit">Week 2 · Family &amp; Home</div>
+</div>
+
+<script>
+/* ---------------- JUMBLED SENTENCES ---------------- */
+const JUMBLE=[
+  {w:["I","'ve","got","two","sisters","."],h:"have got — I"},
+  {w:["She","has","got","a","big","house","."],h:"has got — she"},
+  {w:["We","haven't","got","a","garden","."],h:"negative — we"},
+  {w:["My","brother","hasn't","got","a","car","."],h:"negative — he"},
+  {w:["Have","you","got","any","brothers","?"],h:"question — you"},
+  {w:["Has","she","got","two","children","?"],h:"question — she"},
+  {w:["My","sister's","husband","is","a","teacher","."],h:"'s = belongs to"},
+  {w:["Their","flat","has","got","a","balcony","."],h:"possessive adjective"},
+  {w:["Ahmad's","room","has","got","a","big","window","."],h:"'s + has got"},
+  {w:["How","many","rooms","has","your","house","got","?"],h:"question with how many"},
+  {w:["Our","family","has","got","a","small","kitchen","."],h:"our + has got"},
+  {w:["He","has","got","his","mother's","eyes","."],h:"his + mother's"}
+];
+
+/* ---------------- FILL IN THE BLANKS ---------------- */
+/* sentence uses ___ as the gap */
+const GAPS=[
+  {s:"She ___ got two sisters.",o:["has","have","haven't"],a:"has",h:"he / she / it",w:"With she we use has got."},
+  {s:"I ___ got a big family.",o:["'ve","'s","has"],a:"'ve",h:"short form with I",w:"I have got → I've got."},
+  {s:"We ___ got a garden.  (negative)",o:["haven't","hasn't","not have"],a:"haven't",h:"negative — we",w:"We → haven't got."},
+  {s:"My brother ___ got a car.  (negative)",o:["hasn't","haven't","doesn't"],a:"hasn't",h:"negative — he",w:"He → hasn't got."},
+  {s:"___ you got any children?",o:["Have","Has","Do"],a:"Have",h:"question — you",w:"Questions start with Have / Has."},
+  {s:"___ your sister got a job?",o:["Has","Have","Is"],a:"Has",h:"question — she",w:"Your sister = she → Has."},
+  {s:"This is my ___ book.",o:["sister's","sisters","sister"],a:"sister's",h:"belongs to my sister",w:"Add 's to show it belongs to her."},
+  {s:"That is ___ house.  (they)",o:["their","they're","theirs"],a:"their",h:"possessive adjective",w:"they → their + noun."},
+  {s:"Ahmad has got ___ father's name.",o:["his","he","him"],a:"his",h:"possessive adjective",w:"he → his + noun."},
+  {s:"___ flat has got two bedrooms.  (we)",o:["Our","Us","We"],a:"Our",h:"possessive adjective",w:"we → our + noun."},
+  {s:"She ___ got a brother, but she has got a sister.",o:["hasn't","haven't","isn't"],a:"hasn't",h:"negative — she",w:"She → hasn't got."},
+  {s:"My ___ children are very young.",o:["cousin's","cousins","cousin"],a:"cousin's",h:"belongs to my cousin",w:"Add 's for belonging."}
+];
+
+const ROUNDS=12, TIME=30;
+const el=id=>document.getElementById(id);
+let mode="mixed", queue=[], idx=0, score=0, checked=false, placed=[], picked=null, timeLeft=0, tInt=null, soundOn=true;
+
+/* sound */
+let actx;
+function audio(){if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();return actx;}
+function tone(f,d,ty="sine",v=.15,wn=0){
+  if(!soundOn)return;
+  const a=audio(),o=a.createOscillator(),g=a.createGain();
+  o.type=ty;o.frequency.value=f;o.connect(g);g.connect(a.destination);
+  const t=a.currentTime+wn;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);o.start(t);o.stop(t+d);
+}
+const sfx={
+  tap:()=>tone(520,.08,"sine",.1), un:()=>tone(300,.07,"sine",.08),
+  ok:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.18,"triangle",.16,i*.08)),
+  no:()=>{tone(220,.18,"sawtooth",.1);tone(160,.28,"sawtooth",.1,.06);},
+  tick:()=>tone(880,.04,"square",.05),
+  win:()=>[523,587,659,784,880,1047].forEach((f,i)=>tone(f,.3,"triangle",.17,i*.11)),
+  up:()=>tone(200,.4,"sawtooth",.12)
+};
+el("soundBtn").addEventListener("click",()=>{soundOn=!soundOn;el("soundBtn").textContent=soundOn?"🔊":"🔇";if(soundOn){audio();tone(660,.1,"sine",.12);}});
+
+/* confetti */
+const cv=el("confetti"),cx=cv.getContext("2d");
+let parts=[],raf=null;
+const COLORS=["#0d6e6e","#d8a24a","#c46a4a","#2c6e49","#6d4c7d","#ffffff"];
+function sizeC(){cv.width=innerWidth;cv.height=innerHeight;}
+sizeC();addEventListener("resize",sizeC);
+function burst(n=80,sp=false){
+  for(let i=0;i<n;i++)parts.push({x:sp?Math.random()*cv.width:cv.width/2,y:sp?-20:cv.height*.36,
+    vx:(Math.random()-.5)*(sp?6:11),vy:sp?Math.random()*3+2:Math.random()*-11-4,g:.22+Math.random()*.1,
+    s:6+Math.random()*7,rot:Math.random()*6.28,vr:(Math.random()-.5)*.3,c:COLORS[Math.floor(Math.random()*COLORS.length)],life:1});
+  if(!raf)raf=requestAnimationFrame(draw);
+}
+function draw(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life-=.006;
+    cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,p.life);
+    cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);cx.restore();});
+  parts=parts.filter(p=>p.life>0&&p.y<cv.height+40);
+  if(parts.length)raf=requestAnimationFrame(draw);else{raf=null;cx.clearRect(0,0,cv.width,cv.height);}
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+
+document.querySelectorAll(".modebtn").forEach(b=>b.addEventListener("click",()=>{audio();mode=b.dataset.mode;start();}));
+
+function start(){
+  score=0;idx=0;
+  let items=[];
+  if(mode==="jumble") items=shuffle([...JUMBLE]).map(x=>({type:"j",d:x}));
+  else if(mode==="gap") items=shuffle([...GAPS]).map(x=>({type:"g",d:x}));
+  else{
+    const j=shuffle([...JUMBLE]).slice(0,6).map(x=>({type:"j",d:x}));
+    const g=shuffle([...GAPS]).slice(0,6).map(x=>({type:"g",d:x}));
+    items=shuffle(j.concat(g));
+  }
+  queue=items.slice(0,ROUNDS);
+  el("startScreen").classList.add("hide");el("doneScreen").classList.add("hide");
+  el("gameScreen").classList.remove("hide");
+  load();
+}
+
+function startTimer(){
+  clearInterval(tInt);timeLeft=TIME;el("timeval").textContent=timeLeft;
+  el("timer").classList.remove("warn");
+  tInt=setInterval(()=>{
+    timeLeft--;el("timeval").textContent=Math.max(0,timeLeft);
+    if(timeLeft<=5&&timeLeft>0){el("timer").classList.add("warn");sfx.tick();}
+    if(timeLeft<=0){clearInterval(tInt);timeUp();}
+  },1000);
+}
+
+function load(){
+  checked=false;placed=[];picked=null;
+  const q=queue[idx];
+  el("counter").textContent=`${idx+1} / ${queue.length}`;
+  el("scoretag").textContent=`⭐ ${score}`;
+  el("barfill").style.width=(idx/queue.length*100)+"%";
+  el("feedback").textContent="";el("feedback").className="feedback";
+  el("why").textContent="";
+  el("controls").classList.remove("hide");el("nextControls").classList.add("hide");
+  el("checkBtn").disabled=true;
+
+  if(q.type==="j"){
+    el("typetag").textContent="🔤 Put the words in order";el("typetag").className="typetag tag-jumble";
+    el("jumbleBlock").classList.remove("hide");el("gapBlock").classList.add("hide");
+    el("clearBtn").classList.remove("hide");
+    el("prompt").textContent=q.d.h?("Hint: "+q.d.h):"";
+    const a=el("answer");a.className="answer";a.innerHTML="";
+    const bank=el("bank");bank.innerHTML="";
+    let sw=shuffle([...q.d.w]);
+    if(sw.join(" ")===q.d.w.join(" ")&&q.d.w.length>1)sw=shuffle([...q.d.w]);
+    sw.forEach((word,i)=>{
+      const c=document.createElement("button");
+      c.className="chip";c.textContent=word;c.type="button";c.style.animationDelay=(i*.04)+"s";
+      c.addEventListener("click",()=>place(c,word));
+      bank.appendChild(c);
+    });
+  }else{
+    el("typetag").textContent="✏️ Fill in the blank";el("typetag").className="typetag tag-gap";
+    el("jumbleBlock").classList.add("hide");el("gapBlock").classList.remove("hide");
+    el("clearBtn").classList.add("hide");
+    el("prompt").textContent=q.d.h?("Hint: "+q.d.h):"";
+    renderGap(q.d,null);
+    const o=el("opts");o.innerHTML="";
+    shuffle([...q.d.o]).forEach(word=>{
+      const b=document.createElement("button");
+      b.className="opt";b.textContent=word;b.type="button";
+      b.addEventListener("click",()=>{
+        if(checked)return;
+        sfx.tap();picked=word;
+        [...o.children].forEach(c=>c.classList.remove("chosen"));
+        b.classList.add("chosen");
+        renderGap(q.d,word);
+        el("checkBtn").disabled=false;
+      });
+      o.appendChild(b);
+    });
+  }
+  startTimer();
+}
+
+function renderGap(d,val,state){
+  const cls="gap"+(val?" filled":"")+(state?" "+state:"");
+  el("sentence").innerHTML = d.s.replace("___",`<span class="${cls}">${val||"&nbsp;&nbsp;?&nbsp;&nbsp;"}</span>`);
+}
+
+function place(chip,word){
+  if(checked)return;
+  sfx.tap();chip.classList.add("hidden");
+  const a=document.createElement("button");
+  a.className="chip placed";a.textContent=word;a.type="button";
+  a.addEventListener("click",()=>unplace(a,chip));
+  el("answer").appendChild(a);
+  placed.push({word,aEl:a,chip});
+  el("checkBtn").disabled=placed.length===0;
+}
+function unplace(aEl,chip){
+  if(checked)return;
+  sfx.un();
+  const i=placed.findIndex(p=>p.aEl===aEl);if(i>-1)placed.splice(i,1);
+  aEl.remove();chip.classList.remove("hidden");
+  el("checkBtn").disabled=placed.length===0;
+}
+el("clearBtn").addEventListener("click",()=>{if(!checked)placed.slice().forEach(p=>unplace(p.aEl,p.chip));});
+
+el("checkBtn").addEventListener("click",submit);
+function submit(){
+  if(checked)return;
+  const q=queue[idx];
+  let correct=false;
+  if(q.type==="j"){
+    if(placed.length===0)return;
+    correct = placed.map(p=>p.word).join(" ")===q.d.w.join(" ");
+    el("answer").classList.add(correct?"correct":"wrong");
+    document.querySelectorAll(".chip").forEach(c=>c.classList.add("locked"));
+  }else{
+    if(!picked)return;
+    correct = picked===q.d.a;
+    renderGap(q.d, correct?picked:picked, correct?"ok":"no");
+    if(!correct){
+      setTimeout(()=>{ el("sentence").innerHTML=q.d.s.replace("___",`<span class="gap ok">${q.d.a}</span>`); },1200);
+    }
+    document.querySelectorAll(".opt").forEach(c=>c.classList.add("locked"));
+    el("why").textContent=q.d.w||"";
+  }
+  checked=true;clearInterval(tInt);
+  el("controls").classList.add("hide");el("nextControls").classList.remove("hide");
+
+  if(correct){
+    const bonus=Math.max(1,Math.round(timeLeft/6));
+    const pts=10+bonus;score+=pts;
+    el("feedback").innerHTML=`${pick(["Perfect!","Well done!","Excellent!","Brilliant!"])} ✓ <span class="pts">+${pts} ⭐</span>`;
+    el("feedback").className="feedback ok";
+    el("tryBtn").style.display="none";
+    sfx.ok();burst(80,false);
+  }else{
+    el("feedback").textContent="Not quite — try again!";
+    el("feedback").className="feedback no";
+    el("tryBtn").style.display="";
+    sfx.no();
+  }
+  el("scoretag").textContent=`⭐ ${score}`;
+}
+
+function timeUp(){
+  if(checked)return;checked=true;sfx.up();
+  const q=queue[idx];
+  if(q.type==="j"){el("answer").classList.add("wrong");document.querySelectorAll(".chip").forEach(c=>c.classList.add("locked"));}
+  else{el("sentence").innerHTML=q.d.s.replace("___",`<span class="gap ok">${q.d.a}</span>`);document.querySelectorAll(".opt").forEach(c=>c.classList.add("locked"));el("why").textContent=q.d.w||"";}
+  el("feedback").textContent="⏰ Time's up!";el("feedback").className="feedback no";
+  el("controls").classList.add("hide");el("nextControls").classList.remove("hide");
+  el("tryBtn").style.display="";
+}
+
+el("tryBtn").addEventListener("click",()=>load());
+el("nextBtn").addEventListener("click",()=>{idx++;if(idx>=queue.length)done();else load();});
+
+function done(){
+  clearInterval(tInt);
+  el("gameScreen").classList.add("hide");
+  const max=queue.length*15,pct=Math.round(score/max*100);
+  let stars,msg;
+  if(pct>=85){stars="⭐⭐⭐";msg="Amazing! You've really got have got and possessives.";}
+  else if(pct>=60){stars="⭐⭐";msg="Great work! Keep practising — you're close.";}
+  else{stars="⭐";msg="Good effort! Play again and beat your score.";}
+  const d=el("doneScreen");d.classList.remove("hide");
+  d.innerHTML=`<div class="screen">
+    <h2>Practice complete! 🎉</h2>
+    <div class="stars">${stars}</div>
+    <div class="score-num">${score}</div>
+    <div class="score-lbl">points · ${pct}%</div>
+    <p>${msg}</p>
+    <div class="controls">
+      <button class="act btn-ghost" id="againBtn">Play again</button>
+      <button class="act btn-next" id="menuBtn">Change practice</button>
+    </div>
+    <div class="quote">"Little by little, a little becomes a lot."</div>
+  </div>`;
+  el("againBtn").addEventListener("click",start);
+  el("menuBtn").addEventListener("click",()=>{d.classList.add("hide");el("startScreen").classList.remove("hide");});
+  sfx.win();burst(120,true);setTimeout(()=>burst(110,true),420);
+}
+</script>
+</body>
+</html>
